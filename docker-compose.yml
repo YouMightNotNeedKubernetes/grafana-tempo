@@ -62,17 +62,3 @@ services:
       - host.docker.internal:host-gateway
     deploy: *x-deploy-default
     logging: *x-logging-default
-
-  vulture:
-    image: grafana/tempo-vulture:latest
-    networks:
-      - grafana_tempo
-    command:
-      - "-prometheus-listen-address=:3101"
-      - "-tempo-push-url=http://tempo"
-      - "-tempo-query-url=http://tempo:3100"
-      - "-tempo-retention-duration=1h"
-    deploy:
-      labels:
-        io.prometheus.enable: "true"
-        io.prometheus.scrape_port: "3101"
