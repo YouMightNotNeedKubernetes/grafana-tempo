@@ -57,3 +57,12 @@ services:
       - -config.file=/etc/tempo.yaml
     deploy:
       replicas: 3
+
+  ingress:
+    image: nginx:stable-alpine
+    networks:
+      - grafana-tempo
+    ports:
+      - 8080:8080
+    volumes:
+     - ./configs/nginx.conf:/etc/nginx/nginx.conf:ro
