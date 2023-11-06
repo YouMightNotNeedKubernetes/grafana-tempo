@@ -1,11 +1,11 @@
 x-deploy: &x-deploy-default
   replicas: ${GRAFANA_LOKI_REPLICAS:-3}
-  # placement:
-  #   max_replicas_per_node: 1
-  #   constraints:
-  #     - node.labels.grafana-tempo == true
-  #   preferences:
-  #     - spread: node.labels.grafana-tempo
+  placement:
+    max_replicas_per_node: 1
+    constraints:
+      - node.labels.grafana-tempo == true
+    preferences:
+      - spread: node.labels.grafana-tempo
   labels:
     io.prometheus.enable: "true"
     io.prometheus.scrape_port: "3100"
@@ -72,3 +72,7 @@ services:
       - "-tempo-push-url=http://tempo"
       - "-tempo-query-url=http://tempo:3100"
       - "-tempo-retention-duration=1h"
+    deploy:
+      labels:
+        io.prometheus.enable: "true"
+        io.prometheus.scrape_port: "3101"
