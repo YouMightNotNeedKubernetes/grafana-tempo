@@ -1,71 +1,79 @@
-networks:
-  grafana-tempo:
+x-deploy: &x-deploy-default
+  replicas: ${GRAFANA_LOKI_REPLICAS:-3}
+  # placement:
+  #   max_replicas_per_node: 1
+  #   constraints:
+  #     - node.labels.grafana-tempo == true
+  #   preferences:
+  #     - spread: node.labels.grafana-tempo
+  labels:
+    io.prometheus.enable: "true"
+    io.prometheus.scrape_port: "3100"
+  update_config:
+    parallelism: 1
+    delay: 30s
+    order: stop-first
+    failure_action: rollback
+  rollback_config:
+    parallelism: 1
+    delay: 30s
+  restart_policy:
+    condition: on-failure
+    delay: 30s
+    max_attempts: 3
+    window: 120s
 
-x-grafana-tempo: &x-grafana-tempo
-  image: grafana/tempo:latest
-  networks:
-    - grafana-tempo
-  configs:
-    - source: tempo.yml
-      target: /etc/tempo.yaml
-  extra_hosts:
-    - host.docker.internal:host-gateway
+x-logging: &x-logging-default
+  options:
+    max-size: "12m"
+    max-file: "5"
+  driver: json-file
+
+networks:
+  dockerswarm_monitoring:
+    name: dockerswarm_monitoring
+    external: true
+  grafana_tempo:
+
+volumes:
+  tempo:
 
 configs:
-  nginx.conf:
-    file: configs/nginx.conf
   tempo.yml:
     file: configs/tempo.yml
 
 services:
-  ingress:
-    image: nginx:stable-alpine
+  tempo:
+    image: grafana/tempo:latest
+    command:
+      - -target=scalable-single-binary
+      - -config.file=/etc/tempo.yml
     networks:
-      - grafana-tempo
+      - dockerswarm_monitoring
+      - grafana_tempo
     ports:
-      - ${GRAFANA_TEMPO_HTTP_LISTEN_PORT:-3300}:3100
+      - ${GRAFANA_TEMPO_HTTP_LISTEN_PORT:-3300}:3100 # http_listen_port
     configs:
-      - source: nginx.conf
-        target: /etc/nginx/nginx.conf
+      - source: tempo.yml
+        target: /etc/tempo.yml
+    volumes:
+      - tempo:/tempo-data
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy: *x-deploy-default
+    logging: *x-logging-default
 
-  distributor:
-    <<: *x-grafana-tempo
+  vulture:
+    image: grafana/tempo-vulture:latest
+    networks:
+      - grafana_tempo
     command:
-      - -target=distributor
-      - -config.file=/etc/tempo.yaml
-
-  ingester:
-    <<: *x-grafana-tempo
-    command:
-      - -target=ingester
-      - -config.file=/etc/tempo.yaml
-    deploy:
-      replicas: 3
-
-  query-frontend:
-    <<: *x-grafana-tempo
-    command:
-      - -target=query-frontend
-      - -config.file=/etc/tempo.yaml
-
-  querier:
-    <<: *x-grafana-tempo
-    command:
-      - -target=querier
-      - -config.file=/etc/tempo.yaml
-
-  compactor:
-    <<: *x-grafana-tempo
-    command:
-      - -target=compactor
-      - -config.file=/etc/tempo.yaml
-    deploy:
-      replicas: 3
-
-  metrics-generator:
-    <<: *x-grafana-tempo
-    command:
-      - -target=metrics-generator
-      - -config.file=/etc/tempo.yaml
-    deploy:
-      replicas: 3
+      - "-prometheus-listen-address=:3101"
+      - "-tempo-push-url=http://tempo"
+      - "-tempo-query-url=http://tempo:3100"
+      - "-tempo-retention-duration=1h"

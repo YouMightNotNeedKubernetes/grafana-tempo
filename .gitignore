@@ -1,0 +1,5 @@
+docker-compose.*.yml
+configs/tempo.yml
+configs/tempo.*.yml
+
+dashboards/

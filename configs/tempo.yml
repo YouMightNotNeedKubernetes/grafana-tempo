@@ -14,9 +14,9 @@ storage:
       secret_key: minioadmin
       insecure: true
     wal:
-      path: /tmp/tempo/wal             # where to store the the wal locally
+      path: /tempo-data/wal             # where to store the the wal locally
     local:
-      path: /tmp/tempo/blocks
+      path: /tempo-data/blocks
 
 distributor:
   receivers:                           # this configuration will listen on all ports and protocols that tempo is capable of.
@@ -51,7 +51,7 @@ metrics_generator:
       source: tempo
       cluster: docker-compose
   storage:
-    path: /tmp/tempo/generator/wal
+    path: /tempo-data/generator/wal
     # remote_write:
     #   - url: http://prometheus:9090/api/v1/write
     #     send_exemplars: true
@@ -76,7 +76,7 @@ compactor:
 
 querier:
   frontend_worker:
-    frontend_address: query-frontend:9095
+    frontend_address: tempo:9095
 
 overrides:
   defaults:
