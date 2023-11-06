@@ -2,6 +2,22 @@ server:
   http_listen_port: 3100
   log_level: info
 
+storage:
+  trace:
+    backend: s3
+    s3:
+      # !!! IMPORTANT !!!
+      # ! Update this to the IP address of your MinIO server
+      bucket: tempo
+      endpoint: host.docker.internal:9000
+      access_key: minioadmin
+      secret_key: minioadmin
+      insecure: true
+    wal:
+      path: /tmp/tempo/wal             # where to store the the wal locally
+    local:
+      path: /tmp/tempo/blocks
+
 distributor:
   receivers:                           # this configuration will listen on all ports and protocols that tempo is capable of.
     jaeger:                            # the receives all come from the OpenTelemetry collector.  more configuration information can
@@ -27,6 +43,19 @@ distributor:
         host: host.docker.internal:8500
         # acl_token: secret
 
+metrics_generator:
+  ring: 
+    kvstore: *x-kvstore-config
+  registry:
+    external_labels:
+      source: tempo
+      cluster: docker-compose
+  storage:
+    path: /tmp/tempo/generator/wal
+    # remote_write:
+    #   - url: http://prometheus:9090/api/v1/write
+    #     send_exemplars: true
+
 ingester:
   max_block_duration: 5m               # cut the headblock when this much time passes. this is being set for demo purposes and should probably be left alone normally
 
@@ -48,33 +77,6 @@ compactor:
 querier:
   frontend_worker:
     frontend_address: query-frontend:9095
-
-metrics_generator:
-  ring: 
-    kvstore: *x-kvstore-config
-  registry:
-    external_labels:
-      source: tempo
-      cluster: docker-compose
-  storage:
-    path: /tmp/tempo/generator/wal
-    remote_write:
-      - url: http://prometheus:9090/api/v1/write
-        send_exemplars: true
-
-storage:
-  trace:
-    backend: s3
-    s3:
-      bucket: tempo
-      endpoint: host.docker.internal:9000
-      access_key: minioadmin
-      secret_key: minioadmin
-      insecure: true
-    wal:
-      path: /tmp/tempo/wal             # where to store the the wal locally
-    local:
-      path: /tmp/tempo/blocks
 
 overrides:
   defaults:
