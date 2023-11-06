@@ -12,6 +12,8 @@ x-grafana-tempo: &x-grafana-tempo
     - host.docker.internal:host-gateway
 
 configs:
+  nginx.conf:
+    file: configs/nginx.conf
   tempo.yml:
     file: configs/tempo.yml
 
@@ -22,8 +24,9 @@ services:
       - grafana-tempo
     ports:
       - ${GRAFANA_TEMPO_HTTP_LISTEN_PORT:-3300}:3100
-    volumes:
-     - ./configs/nginx.conf:/etc/nginx/nginx.conf:ro
+    configs:
+      - source: nginx.conf
+        target: /etc/nginx/nginx.conf
 
   distributor:
     <<: *x-grafana-tempo
