@@ -1,0 +1,59 @@
+networks:
+  grafana-tempo:
+
+x-grafana-tempo: &x-grafana-tempo
+  image: grafana/tempo:latest
+  networks:
+    - grafana-tempo
+  configs:
+    - source: tempo.yml
+      target: /etc/tempo.yaml
+  extra_hosts:
+    - host.docker.internal:host-gateway
+
+configs:
+  tempo.yml:
+    file: configs/tempo.yml
+
+services:
+  distributor:
+    <<: *x-grafana-tempo
+    command:
+      - -target=distributor
+      - -config.file=/etc/tempo.yaml
+
+  ingester:
+    <<: *x-grafana-tempo
+    command:
+      - -target=ingester
+      - -config.file=/etc/tempo.yaml
+    deploy:
+      replicas: 3
+
+  query-frontend:
+    <<: *x-grafana-tempo
+    command:
+      - -target=query-frontend
+      - -config.file=/etc/tempo.yaml
+
+  querier:
+    <<: *x-grafana-tempo
+    command:
+      - -target=querier
+      - -config.file=/etc/tempo.yaml
+
+  compactor:
+    <<: *x-grafana-tempo
+    command:
+      - -target=compactor
+      - -config.file=/etc/tempo.yaml
+    deploy:
+      replicas: 3
+
+  metrics-generator:
+    <<: *x-grafana-tempo
+    command:
+      - -target=metrics-generator
+      - -config.file=/etc/tempo.yaml
+    deploy:
+      replicas: 3
