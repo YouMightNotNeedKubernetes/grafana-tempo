@@ -52,7 +52,12 @@ services:
       - dockerswarm_monitoring
       - grafana_tempo
     ports:
-      - ${GRAFANA_TEMPO_HTTP_LISTEN_PORT:-3300}:3100 # http_listen_port
+      - ${GRAFANA_TEMPO_HTTP_LISTEN_PORT:-3300}:3100 # tempo http_listen_port
+      - ${GRAFANA_TEMPO_GRPC_LISTEN_PORT:-9395}:9095 # tempo grpc_listen_port
+      - ${GRAFANA_TEMPO_JAEGER_INGEST_PORT:-14268}:14268 # jaeger ingest
+      - ${GRAFANA_TEMPO_OTLP_GRPC_PORT:-4317}:4317 # otlp grpc
+      - ${GRAFANA_TEMPO_OTLP_HTTP_PORT:-4318}:4318 # otlp http
+      - ${GRAFANA_TEMPO_ZIPKIN_PORT:-9411}:9411  # zipkin
     configs:
       - source: tempo.yml
         target: /etc/tempo.yml
